@@ -1,59 +1,50 @@
 const puppeteer = require('puppeteer');
 
-
 (async () => {
-    const browser = await puppeteer.launch({
-        // headless: false,
-        // slowMo: 100,
-        devtools: true
-    });
-
     try {
-
+        const browser = await puppeteer.launch({
+            headless: false,
+            // slowMo: 100,
+            devtools: true
+        });
+    
         const page = await browser.newPage();
     
-        // await page.setRequestInterception(true);
+        await page.setRequestInterception(true);
 
-        await page.goto('https://tanifund.com/explore', {
-            // waitUntil: 'load',
-            // timeout: 0
-        });    
+        page.on('request', (req) => {            
+            if (['font', 'image'].includes(req.resourceType())) {
+                req.abort();
+            }else {
+                req.continue();
+            }
+        });
 
+        await page.goto('https://tanifund.com/explore');
 
         await page.waitForSelector('.card');
 
-        await page.evaluate(() => {
+        const data = await page.evaluate(() => {
             const cards = document.querySelectorAll('.card');
             const arrOpenFund = [];
             for (let i = 0; i < cards.length - 1; i++) {
                 const card = cards[i];
-                if (card.textContent.length > 0 && card.textContent.includes("Menunggu Dimulai")) {
+                if (card.textContent.length > 0 && card.textContent.includes("Fundraising")) {
                     const title             = card.querySelector('.investment-title').textContent;
                     const profit_sharing    = card.querySelectorAll('.border-bottom')[0].textContent;
                     const tenor             = card.querySelectorAll('.border-bottom')[1].textContent;
-
-                    arrOpenFund.push({ title, profit_sharing, tenor })
+                    
+                    arrOpenFund.push({ title, profit_sharing, tenor, source_data: 'https://tanifund.com/explore' })
                 }
-            }   
-            console.log(arrOpenFund);
-            
-            
-        })
+            }
+            return arrOpenFund;
+        });
 
-    //    page
-    //         .on('request', (req) => {            
-    //             if (['font', 'image'].includes(req.resourceType())) {
-    //                 req.abort();
-    //             }else {
-    //                 req.continue();
-    //             }
-    //         })
-    //         .on('load', () => {
+        await page.close();
+        await browser.close();
 
-    //             console.log('Load is here');
-                
-    //         });
-
+        console.log(data);
+        
 
     } catch (error) {
         console.log("Error nih ", error);
