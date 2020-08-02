@@ -1,0 +1,16 @@
+{
+  "name": "open-funding",
+  "version": "1.0.0",
+  "description": "Collect all peer to peer data that can be funded by us",
+  "main": "scrap.js",
+  "dependencies": {
+    "puppeteer": "^5.2.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node scrap.js"
+  },
+  "keywords": ["p2p", "investment", "web-scrapping"],
+  "author": "OSPT",
+  "license": "ISC"
+}
