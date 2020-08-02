@@ -1,11 +1,11 @@
 const puppeteer = require('puppeteer');
 
-(async () => {
+async function scrap(url, cardsSelector, status, fields) {
     try {
         const browser = await puppeteer.launch({
-            headless: false,
+            // headless: false,
             // slowMo: 100,
-            devtools: true
+            // devtools: true
         });
     
         const page = await browser.newPage();
@@ -20,25 +20,37 @@ const puppeteer = require('puppeteer');
             }
         });
 
-        await page.goto('https://tanifund.com/explore');
+        await page.goto(url);        
 
-        await page.waitForSelector('.card');
+        await page.waitForSelector(cardsSelector);
 
-        const data = await page.evaluate(() => {
-            const cards = document.querySelectorAll('.card');
+        const data = await page.evaluate((url, cardsSelector, status, fields) => {
+            const cards = document.querySelectorAll(cardsSelector);
             const arrOpenFund = [];
             for (let i = 0; i < cards.length - 1; i++) {
                 const card = cards[i];
-                if (card.textContent.length > 0 && card.textContent.includes("Fundraising")) {
-                    const title             = card.querySelector('.investment-title').textContent;
-                    const profit_sharing    = card.querySelectorAll('.border-bottom')[0].textContent;
-                    const tenor             = card.querySelectorAll('.border-bottom')[1].textContent;
+                if (card.textContent.length > 0 && card.textContent.includes(status)) {
+                    const title             = card.querySelector(fields.title).textContent;
+
+                    let profit_sharing = "";
+                    if (Array.isArray(fields.profit_sharing)) {
+                        profit_sharing    = card.querySelectorAll(fields.profit_sharing[0])[fields.profit_sharing[1]].textContent;
+                    }else {
+                        profit_sharing    = card.querySelector(fields.profit_sharing).textContent;
+                    }
+
+                    let tenor = "";
+                    if (Array.isArray(fields.tenor)) {
+                        tenor    = card.querySelectorAll(fields.tenor[0])[fields.tenor[1]].textContent;
+                    }else {
+                        tenor    = card.querySelector(fields.tenor).textContent;
+                    }
                     
-                    arrOpenFund.push({ title, profit_sharing, tenor, source_data: 'https://tanifund.com/explore' })
+                    arrOpenFund.push({ title, profit_sharing, tenor, source_data: url })
                 }
             }
             return arrOpenFund;
-        });
+        }, url, cardsSelector, status, fields);
 
         await page.close();
         await browser.close();
@@ -52,4 +64,11 @@ const puppeteer = require('puppeteer');
     }
     // Call this after the scrapping proccess is done
     // browser.close()
-})();
+
+}
+
+scrap('https://tanifund.com/explore', '.card', 'Fundraising', {
+    title: '.investment-title',
+    profit_sharing: ['.border-bottom', 0],
+    tenor: ['.border-bottom', 1]
+});
